@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "699864689033",
+    "project_id": "geotagged-4aeac",
+    "storage_bucket": "geotagged-4aeac.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:699864689033:android:5d29491aaf11233b7e9958",
+        "android_client_info": {
+          "package_name": "com.geotagged"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxA_sOlAg-Oy8gym7owZ-964T5JOGh4Gw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
