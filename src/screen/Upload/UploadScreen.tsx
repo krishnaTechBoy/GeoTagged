@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { serverTimestamp } from '@react-native-firebase/firestore';
+
 import { styles } from './style';
 import { firestore } from '../../config/firestoreconfig';
 import { RootStackParamList } from '../../types/NavigationTypes';
@@ -25,13 +26,14 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'UploadImage
 const UploadScreen = () => {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const navigation = useNavigation<NavigationProp>();
 
+  const navigation = useNavigation<NavigationProp>();
   const {
     location,
     loading: loadingLocation,
     getCurrentLocation,
   } = useCurrentLocation();
+
 
   const requestCameraPermission = useCallback(async (): Promise<boolean> => {
     if (Platform.OS === 'ios') return true;
@@ -50,7 +52,9 @@ const UploadScreen = () => {
 
       if (granted === PermissionsAndroid.RESULTS.GRANTED) {
         return true;
-      } else if (granted === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+      }
+
+      if (granted === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
         Alert.alert(
           'Permission Blocked',
           'Camera access is blocked. Please enable it from settings.',
@@ -70,6 +74,7 @@ const UploadScreen = () => {
     }
   }, []);
 
+
   const handleTakePicture = useCallback(async () => {
     const hasPermission = await requestCameraPermission();
     if (!hasPermission) return;
@@ -88,14 +93,15 @@ const UploadScreen = () => {
       }
 
       const uri = response.assets?.[0]?.uri;
-      if (uri) {
+      if (uri?.startsWith('file://') || uri?.startsWith('content://')) {
         setImageUri(uri);
       } else {
-        Alert.alert('Error', 'No image URI found.');
+        Alert.alert('Error', 'No valid image URI found.');
       }
     });
   }, [requestCameraPermission]);
 
+ 
   const handleUpload = useCallback(async () => {
     if (!imageUri || !location) {
       Alert.alert('Incomplete Data', 'Both image and location are required.');
@@ -103,6 +109,7 @@ const UploadScreen = () => {
     }
 
     setUploading(true);
+
     try {
       await firestore.collection('uploads').add({
         imageUri,
@@ -122,6 +129,7 @@ const UploadScreen = () => {
     }
   }, [imageUri, location, navigation]);
 
+ 
   useEffect(() => {
     getCurrentLocation();
   }, [getCurrentLocation]);
@@ -138,20 +146,24 @@ const UploadScreen = () => {
         )}
       </View>
 
-      {loadingLocation ? (
-        <ActivityIndicator color="#007bff" size="small" />
-      ) : location ? (
-        <Text style={styles.locationText}>
-          📍 {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
-        </Text>
-      ) : (
-        <TouchableOpacity onPress={getCurrentLocation}>
-          <Text style={[styles.locationText, { color: '#007bff' }]}>Retry Location</Text>
-        </TouchableOpacity>
-      )}
+      <View style={{ marginVertical: 10 }}>
+        {loadingLocation ? (
+          <ActivityIndicator color="#007bff" size="small" />
+        ) : location ? (
+          <Text style={styles.locationText}>
+            📍 {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
+          </Text>
+        ) : (
+          <TouchableOpacity onPress={getCurrentLocation}>
+            <Text style={[styles.locationText, { color: '#007bff' }]}>
+              Retry Location
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       <TouchableOpacity style={styles.button} onPress={handleTakePicture}>
-        <Text style={styles.buttonText}>Take Picture</Text>
+        <Text style={styles.buttonText}>📷 Take Picture</Text>
       </TouchableOpacity>
 
       {imageUri && location && (
@@ -163,7 +175,7 @@ const UploadScreen = () => {
           {uploading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Upload to Firestore</Text>
+            <Text style={styles.buttonText}>⬆️ Upload to Firestore</Text>
           )}
         </TouchableOpacity>
       )}

@@ -1,44 +1,57 @@
-import { StyleSheet } from "react-native";
-import { height, width } from "../../constants/size";
+import { StyleSheet } from 'react-native';
 
-export const FAB_SIZE = width * 0.14;
-export const ICON_SIZE = FAB_SIZE * 0.45;
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
   },
-  fab: {
-    position: 'absolute',
-    bottom: height * 0.05,
-    right: width * 0.05,
-    width: FAB_SIZE,
-    height: FAB_SIZE,
-    borderRadius: FAB_SIZE / 2,
-    backgroundColor: '#007AFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  fabImage: {
-    width: ICON_SIZE,
-    height: ICON_SIZE,
-  },
-   calloutContainer: {
+  calloutContainer: {
     width: 200,
     padding: 8,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    alignItems: 'center',
   },
   calloutImage: {
     width: '100%',
     height: 100,
     borderRadius: 8,
-    marginBottom: 5,
+    marginBottom: 6,
   },
   calloutText: {
     fontSize: 12,
     color: '#333',
+    marginVertical: 2,
+    textAlign: 'center',
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#555',
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 30,
+    right: 20,
+    backgroundColor: '#007bff',
+    borderRadius: 30,
+    padding: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  fabImage: {
+    width: 24,
+    height: 24,
+    tintColor: '#fff',
   },
 });

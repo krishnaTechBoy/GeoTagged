@@ -19,16 +19,16 @@ export const useCurrentLocation = () => {
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         {
           title: 'Location Permission Required',
-          message: 'This app requires location access to center the map.',
+          message: 'This app requires location access to proceed.',
           buttonNeutral: 'Ask Me Later',
           buttonNegative: 'Cancel',
           buttonPositive: 'OK',
         }
       );
 
-      if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-        return true;
-      } else if (granted === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+      if (granted === PermissionsAndroid.RESULTS.GRANTED) return true;
+
+      if (granted === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
         Alert.alert(
           'Permission Blocked',
           'You have permanently denied location access. Please enable it in app settings.',
@@ -38,7 +38,7 @@ export const useCurrentLocation = () => {
           ]
         );
       } else {
-        Alert.alert('Permission Denied', 'Location permission is required to proceed.');
+        Alert.alert('Permission Denied', 'Location permission is required.');
       }
 
       return false;
@@ -49,25 +49,18 @@ export const useCurrentLocation = () => {
   }, []);
 
   const getCurrentLocation = useCallback(async () => {
-    let granted = false;
-
-    while (!granted) {
-      granted = await requestLocationPermission();
-      if (!granted) {
-        
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-    }
+    const granted = await requestLocationPermission();
+    if (!granted) return;
 
     setLoading(true);
 
     Geolocation.getCurrentPosition(
-      (position: any) => {
+      (position) => {
         const { latitude, longitude } = position.coords;
         setLocation({ latitude, longitude });
         setLoading(false);
       },
-      error => {
+      (error) => {
         console.error('Location error:', error);
         Alert.alert('Location Error', error.message);
         setLoading(false);
@@ -75,7 +68,7 @@ export const useCurrentLocation = () => {
       {
         enableHighAccuracy: false,
         timeout: 15000,
-       
+    
       }
     );
   }, [requestLocationPermission]);

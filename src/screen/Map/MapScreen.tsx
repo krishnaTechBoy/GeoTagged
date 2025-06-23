@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState, memo } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  memo,
+} from 'react';
 import {
   StyleSheet,
   TouchableOpacity,
@@ -8,30 +14,32 @@ import {
   Text,
   Image,
 } from 'react-native';
-import MapView, { Marker, Callout, Region } from 'react-native-maps';
+import MapView, { Marker, Callout, Region, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import firestore from '@react-native-firebase/firestore';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-
 import { LocationData, RootStackParamList } from '../../types/NavigationTypes';
 import { useCurrentLocation } from '../../hooks/useCurrentLocation';
 import { styles } from './style';
-import { height, width } from '../../constants/size';
+
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'MapView'>;
 
 const MemoizedMarker = memo(({ location }: { location: LocationData }) => (
   <Marker coordinate={{ latitude: location.latitude, longitude: location.longitude }}>
-    <Callout tooltip>
+    <Callout>
       <View style={styles.calloutContainer}>
         <Image
           source={{ uri: location.imageUri }}
           style={styles.calloutImage}
-          resizeMode="contain"
+          resizeMode="cover"
         />
         <Text style={styles.calloutText}>
           {new Date(location.createdAt.toDate()).toLocaleString()}
+        </Text>
+        <Text style={styles.calloutText}>
+          📍 {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
         </Text>
       </View>
     </Callout>
@@ -45,6 +53,7 @@ const MapScreen = () => {
   const [loading, setLoading] = useState(true);
   const [showMap, setShowMap] = useState(false);
   const [visibleRegion, setVisibleRegion] = useState<Region | null>(null);
+
 
   const { location: userLocation, getCurrentLocation, loading: locationLoading } = useCurrentLocation();
 
@@ -157,7 +166,7 @@ const MapScreen = () => {
         <MapView
           ref={mapRef}
           style={StyleSheet.absoluteFillObject}
-          provider="google"
+          provider={PROVIDER_GOOGLE}
           initialRegion={{
             latitude: userLocation.latitude,
             longitude: userLocation.longitude,
@@ -179,16 +188,10 @@ const MapScreen = () => {
       )}
 
       {(loading || locationLoading) && (
-        <ActivityIndicator
-          size="large"
-          color="#000"
-          style={{
-            position: 'absolute',
-            top: height / 2 - 20,
-            left: width / 2 - 20,
-            zIndex: 999,
-          }}
-        />
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#000" />
+          <Text style={styles.loadingText}>Loading map data...</Text>
+        </View>
       )}
 
       <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={handleNavigateToUpload}>
@@ -202,4 +205,4 @@ const MapScreen = () => {
   );
 };
 
-export default MapScreen;
+export default memo(MapScreen);
