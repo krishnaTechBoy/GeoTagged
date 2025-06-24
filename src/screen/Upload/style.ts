@@ -56,4 +56,25 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 16,
   },
+
+  ////
+
+   fab: {
+    position: 'absolute',
+    bottom: height * 0.04,
+    right: width * 0.05,
+    backgroundColor: '#007bff',
+    borderRadius: width * 0.15,
+    padding: width * 0.04,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  fabImage: {
+    width: width * 0.06,
+    height: width * 0.06,
+    tintColor: '#fff',
+  },
 });

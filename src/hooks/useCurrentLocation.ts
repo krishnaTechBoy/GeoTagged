@@ -1,6 +1,18 @@
-import { useState, useCallback } from 'react';
-import { PermissionsAndroid, Platform, Alert, Linking } from 'react-native';
-import Geolocation from '@react-native-community/geolocation';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import {
+  Alert,
+  Linking,
+  Platform,
+} from 'react-native';
+import Geolocation, {
+} from '@react-native-community/geolocation';
+import {
+  check,
+  request,
+  openSettings,
+  PERMISSIONS,
+  RESULTS,
+} from 'react-native-permissions';
 
 interface Coordinates {
   latitude: number;
@@ -9,32 +21,46 @@ interface Coordinates {
 
 export const useCurrentLocation = () => {
   const [location, setLocation] = useState<Coordinates | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const watchId = useRef<number | null>(null);
 
+  // Configure on mount
+  useEffect(() => {
+    Geolocation.setRNConfiguration({
+      skipPermissionRequests: false,
+      authorizationLevel: 'whenInUse',
+    });
+
+    return () => {
+      stopWatching(); // ensure cleanup
+      Geolocation.stopObserving();
+    };
+  }, []);
+
+  // Request location permissions
   const requestLocationPermission = useCallback(async (): Promise<boolean> => {
-    if (Platform.OS === 'ios') return true;
+    const permission =
+      Platform.OS === 'ios'
+        ? PERMISSIONS.IOS.LOCATION_WHEN_IN_USE
+        : PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION;
 
     try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        {
-          title: 'Location Permission Required',
-          message: 'This app requires location access to proceed.',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Cancel',
-          buttonPositive: 'OK',
-        }
-      );
+      const status = await check(permission);
 
-      if (granted === PermissionsAndroid.RESULTS.GRANTED) return true;
+      if (status === RESULTS.GRANTED) return true;
 
-      if (granted === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+      if (status === RESULTS.DENIED) {
+        const result = await request(permission);
+        return result === RESULTS.GRANTED;
+      }
+
+      if (status === RESULTS.BLOCKED) {
         Alert.alert(
           'Permission Blocked',
-          'You have permanently denied location access. Please enable it in app settings.',
+          'Please enable location permission in settings.',
           [
             { text: 'Cancel', style: 'cancel' },
-            { text: 'Open Settings', onPress: () => Linking.openSettings() },
+            { text: 'Open Settings', onPress: Linking.openSettings },
           ]
         );
       } else {
@@ -42,36 +68,72 @@ export const useCurrentLocation = () => {
       }
 
       return false;
-    } catch (err) {
-      console.warn('Permission error:', err);
+    } catch (error) {
+      console.error('Permission error:', error);
       return false;
     }
   }, []);
 
+  // Get location once
   const getCurrentLocation = useCallback(async () => {
-    const granted = await requestLocationPermission();
-    if (!granted) return;
+    const hasPermission = await requestLocationPermission();
+    if (!hasPermission) return;
 
     setLoading(true);
 
     Geolocation.getCurrentPosition(
-      (position) => {
+      (position:any) => {
         const { latitude, longitude } = position.coords;
         setLocation({ latitude, longitude });
         setLoading(false);
       },
-      (error) => {
-        console.error('Location error:', error);
+      (error:any) => {
+        console.error('Location Error:', error);
         Alert.alert('Location Error', error.message);
         setLoading(false);
       },
       {
         enableHighAccuracy: false,
         timeout: 15000,
-    
+        
       }
     );
   }, [requestLocationPermission]);
 
-  return { location, loading, getCurrentLocation };
+  // Start watching location
+  const startWatching = useCallback(async () => {
+    const hasPermission = await requestLocationPermission();
+    if (!hasPermission) return;
+
+    watchId.current = Geolocation.watchPosition(
+      (position:any) => {
+        const { latitude, longitude } = position.coords;
+        setLocation({ latitude, longitude });
+      },
+      (error: any) => {
+        console.error('Watch Error:', error);
+      },
+      {
+        enableHighAccuracy: true,
+        distanceFilter: 10,
+      }
+    );
+  }, [requestLocationPermission]);
+
+  // Stop watching location
+  const stopWatching = useCallback(() => {
+    if (watchId.current !== null) {
+      Geolocation.clearWatch(watchId.current);
+      watchId.current = null;
+    }
+    Geolocation.stopObserving();
+  }, []);
+
+  return {
+    location,
+    loading,
+    getCurrentLocation,
+    startWatching,
+    stopWatching,
+  };
 };

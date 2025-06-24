@@ -4,6 +4,7 @@ import React, {
   useRef,
   useState,
   memo,
+  useMemo,
 } from 'react';
 import {
   StyleSheet,
@@ -13,8 +14,14 @@ import {
   View,
   Text,
   Image,
+  Dimensions,
+  InteractionManager,
 } from 'react-native';
-import MapView, { Marker, Callout, Region, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, {
+  Marker,
+  Region,
+  PROVIDER_GOOGLE,
+} from 'react-native-maps';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import firestore from '@react-native-firebase/firestore';
@@ -23,39 +30,36 @@ import { LocationData, RootStackParamList } from '../../types/NavigationTypes';
 import { useCurrentLocation } from '../../hooks/useCurrentLocation';
 import { styles } from './style';
 
-
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'MapView'>;
 
-const MemoizedMarker = memo(({ location }: { location: LocationData }) => (
-  <Marker coordinate={{ latitude: location.latitude, longitude: location.longitude }}>
-    <Callout>
-      <View style={styles.calloutContainer}>
-        <Image
-          source={{ uri: location.imageUri }}
-          style={styles.calloutImage}
-          resizeMode="cover"
-        />
-        <Text style={styles.calloutText}>
-          {new Date(location.createdAt.toDate()).toLocaleString()}
-        </Text>
-        <Text style={styles.calloutText}>
-          📍 {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
-        </Text>
-      </View>
-    </Callout>
-  </Marker>
-));
+const MemoizedMarker = memo(
+  ({ location, onPress }: { location: LocationData; onPress: (loc: LocationData) => void }) => (
+    <Marker
+      coordinate={{ latitude: location.latitude, longitude: location.longitude }}
+      onPress={() => onPress(location)}
+    />
+  ),
+  (prev, next) => prev.location.id === next.location.id
+);
 
 const MapScreen = () => {
   const navigation = useNavigation<NavigationProp>();
   const mapRef = useRef<MapView | null>(null);
+  const hasFitToCoords = useRef(false);
+
   const [locations, setLocations] = useState<LocationData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showMap, setShowMap] = useState(false);
   const [visibleRegion, setVisibleRegion] = useState<Region | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<LocationData | null>(null);
 
-
-  const { location: userLocation, getCurrentLocation, loading: locationLoading } = useCurrentLocation();
+  const {
+    location: userLocation,
+    getCurrentLocation,
+    startWatching,
+    stopWatching,
+    loading: locationLoading,
+  } = useCurrentLocation();
 
   const fetchMarkers = useCallback(async () => {
     try {
@@ -83,7 +87,7 @@ const MapScreen = () => {
 
       setLocations(fetchedLocations);
 
-      if (fetchedLocations.length > 0 && mapRef.current) {
+      if (fetchedLocations.length > 0 && mapRef.current && !hasFitToCoords.current) {
         mapRef.current.fitToCoordinates(
           fetchedLocations.map(loc => ({
             latitude: loc.latitude,
@@ -94,6 +98,7 @@ const MapScreen = () => {
             animated: true,
           }
         );
+        hasFitToCoords.current = true;
       }
     } catch (error) {
       console.error('Error fetching markers:', error);
@@ -109,8 +114,11 @@ const MapScreen = () => {
       const loadEverything = async () => {
         if (isActive) {
           await getCurrentLocation();
-          await fetchMarkers();
-          setShowMap(true);
+          InteractionManager.runAfterInteractions(() => {
+            fetchMarkers();
+            startWatching();
+            setShowMap(true);
+          });
         }
       };
 
@@ -118,27 +126,40 @@ const MapScreen = () => {
 
       return () => {
         isActive = false;
+        stopWatching();
         setShowMap(false);
       };
-    }, [getCurrentLocation, fetchMarkers])
+    }, [getCurrentLocation, fetchMarkers, startWatching, stopWatching])
   );
 
-  const offsetLocations = locations.map((loc, index) => ({
-    ...loc,
-    latitude: loc.latitude + index * 0.00005,
-    longitude: loc.longitude + index * 0.00005,
-  }));
+  const offsetLocations = useMemo(
+    () =>
+      locations.map((loc, index) => ({
+        ...loc,
+        latitude: loc.latitude + index * 0.00005,
+        longitude: loc.longitude + index * 0.00005,
+      })),
+    [locations]
+  );
 
-  const filteredLocations = visibleRegion
-    ? offsetLocations.filter(loc =>
-        Math.abs(loc.latitude - visibleRegion.latitude) < visibleRegion.latitudeDelta &&
-        Math.abs(loc.longitude - visibleRegion.longitude) < visibleRegion.longitudeDelta
-      )
-    : offsetLocations;
+  const filteredLocations = useMemo(() => {
+    if (!visibleRegion) return offsetLocations;
+    return offsetLocations.filter(loc =>
+      Math.abs(loc.latitude - visibleRegion.latitude) < visibleRegion.latitudeDelta &&
+      Math.abs(loc.longitude - visibleRegion.longitude) < visibleRegion.longitudeDelta
+    );
+  }, [offsetLocations, visibleRegion]);
 
-  const handleRegionChange = (region: Region) => {
-    setVisibleRegion(region);
-  };
+  const handleRegionChange = useCallback(
+    (() => {
+      let timeout: NodeJS.Timeout;
+      return (region: Region) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => setVisibleRegion(region), 400);
+      };
+    })(),
+    []
+  );
 
   const handleNavigateToUpload = useCallback(() => {
     navigation.navigate('UploadImage');
@@ -173,16 +194,24 @@ const MapScreen = () => {
             latitudeDelta: 0.01,
             longitudeDelta: 0.01,
           }}
-          showsUserLocation={true}
-          showsMyLocationButton={true}
-          toolbarEnabled={true}
-          loadingEnabled={true}
-          cacheEnabled={true}
-          moveOnMarkerPress={true}
+          showsUserLocation
+          showsMyLocationButton
+          showsCompass={false}
+          showsScale={false}
+         
+          showsIndoors={false}
+          toolbarEnabled
+          loadingEnabled
+          cacheEnabled
+          moveOnMarkerPress
           onRegionChangeComplete={handleRegionChange}
         >
           {filteredLocations.map(location => (
-            <MemoizedMarker key={location.id} location={location} />
+            <MemoizedMarker
+              key={location.id}
+              location={location}
+              onPress={setSelectedLocation}
+            />
           ))}
         </MapView>
       )}
@@ -194,11 +223,27 @@ const MapScreen = () => {
         </View>
       )}
 
+      {selectedLocation && (
+        <View style={styles.customCallout} removeClippedSubviews>
+          <Image
+            source={{ uri: selectedLocation.imageUri }}
+            style={styles.customCalloutImage}
+            resizeMode="cover"
+          />
+          <Text style={styles.calloutText}>
+            {new Date(selectedLocation.createdAt.toDate()).toLocaleString()}
+          </Text>
+          <TouchableOpacity onPress={() => setSelectedLocation(null)}>
+            <Text style={styles.closeText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={handleNavigateToUpload}>
         <Image
-          source={{ uri: 'https://img.icons8.com/ios-filled/50/ffffff/camera.png' }}
+          source={{uri:'https://img.icons8.com/ios-filled/50/ffffff/camera.png'}}
           style={styles.fabImage}
-          resizeMode="contain"
+          resizeMode="cover"
         />
       </TouchableOpacity>
     </SafeAreaView>

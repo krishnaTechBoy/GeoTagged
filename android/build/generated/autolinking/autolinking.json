@@ -85,6 +85,30 @@
         }
       }
     },
+    "@react-native-firebase/storage": {
+      "root": "C:\\Users\\Lenovo\\demo\\node_modules\\@react-native-firebase\\storage",
+      "name": "@react-native-firebase/storage",
+      "platforms": {
+        "ios": {
+          "podspecPath": "C:\\Users\\Lenovo\\demo\\node_modules\\@react-native-firebase\\storage\\RNFBStorage.podspec",
+          "version": "22.2.1",
+          "configurations": [],
+          "scriptPhases": []
+        },
+        "android": {
+          "sourceDir": "C:\\Users\\Lenovo\\demo\\node_modules\\@react-native-firebase\\storage\\android",
+          "packageImportPath": "import io.invertase.firebase.storage.ReactNativeFirebaseStoragePackage;",
+          "packageInstance": "new ReactNativeFirebaseStoragePackage()",
+          "buildTypes": [],
+          "componentDescriptors": [],
+          "cmakeListsPath": "C:/Users/Lenovo/demo/node_modules/@react-native-firebase/storage/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cxxModuleCMakeListsModuleName": null,
+          "cxxModuleCMakeListsPath": null,
+          "cxxModuleHeaderName": null,
+          "isPureCxxDependency": false
+        }
+      }
+    },
     "react-native-image-picker": {
       "root": "C:\\Users\\Lenovo\\demo\\node_modules\\react-native-image-picker",
       "name": "react-native-image-picker",
@@ -139,6 +163,31 @@
             "RNMapsWMSTileComponentDescriptor"
           ],
           "cmakeListsPath": "C:/Users/Lenovo/demo/node_modules/react-native-maps/android/src/main/jni/CMakeLists.txt",
+          "cxxModuleCMakeListsModuleName": null,
+          "cxxModuleCMakeListsPath": null,
+          "cxxModuleHeaderName": null,
+          "isPureCxxDependency": false
+        }
+      }
+    },
+    "react-native-permissions": {
+      "root": "C:\\Users\\Lenovo\\demo\\node_modules\\react-native-permissions",
+      "name": "react-native-permissions",
+      "platforms": {
+        "ios": {
+          "podspecPath": "C:\\Users\\Lenovo\\demo\\node_modules\\react-native-permissions\\RNPermissions.podspec",
+          "version": "5.4.1",
+          "configurations": [],
+          "scriptPhases": []
+        },
+        "android": {
+          "sourceDir": "C:\\Users\\Lenovo\\demo\\node_modules\\react-native-permissions\\android",
+          "packageImportPath": "import com.zoontek.rnpermissions.RNPermissionsPackage;",
+          "packageInstance": "new RNPermissionsPackage()",
+          "buildTypes": [],
+          "libraryName": "RNPermissionsSpec",
+          "componentDescriptors": [],
+          "cmakeListsPath": "C:/Users/Lenovo/demo/node_modules/react-native-permissions/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,

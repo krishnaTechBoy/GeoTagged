@@ -3,6 +3,8 @@ import { FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
 export type RootStackParamList = {
   MapView: undefined;
   UploadImage: undefined;
+  Gallery:undefined;
+  Splash:undefined;
 };
 
 
